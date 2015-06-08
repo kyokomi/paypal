@@ -1,2 +1,2 @@
 # paypal
-PayPal api library for golang (Go)
+PayPal REST API library for golang (Go)
