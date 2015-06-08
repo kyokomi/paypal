@@ -39,11 +39,11 @@ func (a AdminAuthToken) Authorization() string {
 	return fmt.Sprintf("%s %s", a.TokenType, a.AccessToken)
 }
 
-type OAuth2TokenService struct {
+type OAuth2Service struct {
 	client *PayPalClient
 }
 
-func (s OAuth2TokenService) Get() (AdminAuthToken, error) {
+func (s OAuth2Service) GetToken() (AdminAuthToken, error) {
 	opts := s.client.Options
 
 	val := url.Values{}
