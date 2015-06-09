@@ -1,13 +1,15 @@
 package paypal
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 )
 
 const (
-	paymentListURL = "/v1/payments/payment"
+	paymentListURL   = "/v1/payments/payment"
+	paymentCreateURL = "/v1/payments/payment"
 )
 
 type PaymentListResponse struct {
@@ -39,8 +41,8 @@ type RelatedResource struct {
 type Amount struct {
 	Currency string `json:"currency"`
 	Details  struct {
-		Subtotal string `json:"subtotal"`
-	} `json:"details"`
+		Subtotal string `json:"subtotal,omitempty"`
+	} `json:"details,omitempty"`
 	Total string `json:"total"`
 }
 
@@ -158,4 +160,53 @@ func (s PaymentService) List() (PaymentListResponse, error) {
 
 	var r PaymentListResponse
 	return r, json.Unmarshal(data, &r)
+}
+
+type PaymentCreateRequest struct {
+	Intent       string `json:"intent"` // TODO: enumにする
+	Payer        Payer  `json:"payer"`
+	RedirectUrls struct {
+		CancelURL string `json:"cancel_url"`
+		ReturnURL string `json:"return_url"`
+	} `json:"redirect_urls"`
+	Transactions []Transaction `json:"transactions"`
+}
+
+type PaymentCreateResponse struct {
+	ID           string        `json:"id"`
+	Intent       string        `json:"intent"` // TODO: enumにする
+	State        string        `json:"state"`
+	Payer        Payer         `json:"payer"`
+	Links        []Link        `json:"links"`
+	Transactions []Transaction `json:"transactions"`
+	CreateTime   string        `json:"create_time"`
+	UpdateTime   string        `json:"update_time"`
+}
+
+func (s PaymentService) Create(request PaymentCreateRequest) (PaymentCreateResponse, error) {
+	inData, err := json.Marshal(request)
+	if err != nil {
+		return PaymentCreateResponse{}, err
+	}
+
+	req, err := http.NewRequest("POST", s.client.URL(paymentCreateURL), bytes.NewBuffer(inData))
+	if err != nil {
+		return PaymentCreateResponse{}, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", s.client.Authorization())
+
+	res, err := s.client.Do(req)
+	if err != nil {
+		return PaymentCreateResponse{}, err
+	}
+	defer res.Body.Close()
+
+	outData, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return PaymentCreateResponse{}, err
+	}
+
+	var result PaymentCreateResponse
+	return result, json.Unmarshal(outData, &result)
 }
