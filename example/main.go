@@ -27,8 +27,8 @@ func main() {
 	req := paypal.PaymentCreateRequest{}
 	req.Intent = "sale"
 	req.Payer.PaymentMethod = "paypal"
-	req.RedirectUrls.CancelURL = "http://localhost:8000//paypal/payment/cancel"
-	req.RedirectUrls.ReturnURL = "http://localhost:8000/paypal/payment/execute"
+	req.RedirectURLs.CancelURL = "http://localhost:8000//paypal/payment/cancel"
+	req.RedirectURLs.ReturnURL = "http://localhost:8000/paypal/payment/execute"
 	req.Transactions = []paypal.Transaction{
 		{
 			Amount: paypal.Amount{

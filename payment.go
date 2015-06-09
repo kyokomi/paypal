@@ -17,14 +17,20 @@ type PaymentListResponse struct {
 	Payments []Payment `json:"payments"`
 }
 
+type PayIntent string
+
+const (
+	IntentSale = "sale"
+)
+
 type Payment struct {
-	CreateTime   string        `json:"create_time"`
 	ID           string        `json:"id"`
-	Intent       string        `json:"intent"`
+	Intent       PayIntent     `json:"intent"`
 	Links        []Link        `json:"links"`
 	Payer        Payer         `json:"payer"`
-	State        string        `json:"state"`
+	State        string        `json:"state"` // TODO: enum
 	Transactions []Transaction `json:"transactions"`
+	CreateTime   string        `json:"create_time"`
 	UpdateTime   string        `json:"update_time"`
 }
 
@@ -47,33 +53,39 @@ type Amount struct {
 }
 
 type Sale struct {
-	Amount                    Amount `json:"amount"`
-	CreateTime                string `json:"create_time"`
 	ID                        string `json:"id"`
+	Amount                    Amount `json:"amount"`
+	State                     string `json:"state"` // TODO: enum
 	Links                     []Link `json:"links"`
 	ParentPayment             string `json:"parent_payment"`
-	PaymentMode               string `json:"payment_mode"`
+	PaymentMode               string `json:"payment_mode"` // TODO: enum?
 	ProtectionEligibility     string `json:"protection_eligibility"`
 	ProtectionEligibilityType string `json:"protection_eligibility_type"`
-	State                     string `json:"state"`
 	TransactionFee            struct {
 		Currency string `json:"currency"`
 		Value    string `json:"value"`
 	} `json:"transaction_fee"`
+	CreateTime string `json:"create_time"`
 	UpdateTime string `json:"update_time"`
 }
 
+type PaymentMethod string
+
+const (
+	PaymentMethodPayPal = "paypal"
+)
+
 type Payer struct {
-	PayerInfo     PayerInfo `json:"payer_info"`
-	PaymentMethod string    `json:"payment_method"`
-	Status        string    `json:"status"`
+	PayerInfo     PayerInfo     `json:"payer_info"`
+	PaymentMethod PaymentMethod `json:"payment_method"`
+	Status        string        `json:"status"` // TODO: enum?
 }
 
 type PayerInfo struct {
-	Email           string          `json:"email"`
+	PayerID         string          `json:"payer_id"`
 	FirstName       string          `json:"first_name"`
 	LastName        string          `json:"last_name"`
-	PayerID         string          `json:"payer_id"`
+	Email           string          `json:"email"`
 	ShippingAddress ShippingAddress `json:"shipping_address"`
 }
 
@@ -108,6 +120,7 @@ const (
 	RelVoid          = "void"           // Link to void an authorized payment.
 	RelRefund        = "refund"         // Link to refund a completed sale.
 	RelDelete        = "delete"         // Link to delete a credit card from the vault.
+	RelApprovalURL   = "approval_url"   // Link to approval_url.
 )
 
 // Method component
@@ -165,7 +178,7 @@ func (s PaymentService) List() (PaymentListResponse, error) {
 type PaymentCreateRequest struct {
 	Intent       string `json:"intent"` // TODO: enumにする
 	Payer        Payer  `json:"payer"`
-	RedirectUrls struct {
+	RedirectURLs struct {
 		CancelURL string `json:"cancel_url"`
 		ReturnURL string `json:"return_url"`
 	} `json:"redirect_urls"`
@@ -175,12 +188,21 @@ type PaymentCreateRequest struct {
 type PaymentCreateResponse struct {
 	ID           string        `json:"id"`
 	Intent       string        `json:"intent"` // TODO: enumにする
-	State        string        `json:"state"`
+	State        string        `json:"state"`  // TODO: enum?
 	Payer        Payer         `json:"payer"`
 	Links        []Link        `json:"links"`
 	Transactions []Transaction `json:"transactions"`
 	CreateTime   string        `json:"create_time"`
 	UpdateTime   string        `json:"update_time"`
+}
+
+func (r PaymentCreateResponse) LinkByRel(rel Rel) Link {
+	for _, l := range r.Links {
+		if l.Rel == rel {
+			return l
+		}
+	}
+	return Link{}
 }
 
 func (s PaymentService) Create(request PaymentCreateRequest) (PaymentCreateResponse, error) {
