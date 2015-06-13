@@ -51,13 +51,17 @@ func (s PaymentService) List() (PaymentListResponse, error) {
 	}
 	defer res.Body.Close()
 
-	data, err := ioutil.ReadAll(res.Body)
+	outData, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return PaymentListResponse{}, err
 	}
 
+	if res.StatusCode >= 400 {
+		return PaymentListResponse{}, fmt.Errorf("response error %d %s", res.StatusCode, string(outData))
+	}
+
 	var r PaymentListResponse
-	return r, json.Unmarshal(data, &r)
+	return r, json.Unmarshal(outData, &r)
 }
 
 type PaymentCreateRequest struct {
@@ -114,6 +118,10 @@ func (s PaymentService) Create(request PaymentCreateRequest) (PaymentCreateRespo
 		return PaymentCreateResponse{}, err
 	}
 
+	if res.StatusCode >= 400 {
+		return PaymentCreateResponse{}, fmt.Errorf("response error %d %s", res.StatusCode, string(outData))
+	}
+
 	var result PaymentCreateResponse
 	return result, json.Unmarshal(outData, &result)
 }
@@ -146,7 +154,6 @@ func (s PaymentService) Execute(paymentID string, executeReq PaymentExecuteReque
 	if err != nil {
 		return err
 	}
-
 	// TODO: あとで
 	fmt.Println("payment/execute", string(outData))
 
@@ -162,6 +169,37 @@ type PaymentPayoutRequest struct {
 	} `json:"sender_batch_header"`
 }
 
-func (s PaymentService) Payout(syncMode bool, payoutReq PaymentPayoutRequest) {
-	// TODO:
+func (s PaymentService) Payout(syncMode bool, payoutReq PaymentPayoutRequest) error {
+	inData, err := json.Marshal(payoutReq)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf(paymentPayoutURL, syncMode), bytes.NewBuffer(inData))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", s.client.Authorization())
+
+	res, err := s.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	outData, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode >= 400 {
+		return fmt.Errorf("response error %d %s", res.StatusCode, string(outData))
+	}
+
+	// TODO: あとで
+	fmt.Println("payment/execute", string(outData))
+
+	return nil
 }
