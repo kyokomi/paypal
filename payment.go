@@ -3,13 +3,15 @@ package paypal
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
 
 const (
-	paymentListURL   = "/v1/payments/payment"
-	paymentCreateURL = "/v1/payments/payment"
+	paymentListURL    = "/v1/payments/payment"
+	paymentCreateURL  = "/v1/payments/payment"
+	paymentExecuteURL = "/v1/payments/payment/%s/execute/"
 )
 
 type PaymentListResponse struct {
@@ -231,4 +233,42 @@ func (s PaymentService) Create(request PaymentCreateRequest) (PaymentCreateRespo
 
 	var result PaymentCreateResponse
 	return result, json.Unmarshal(outData, &result)
+}
+
+type PaymentExecuteRequest struct {
+	PayerID string `json:"payer_id"`
+}
+
+func (s PaymentService) Execute(paymentID, payerID string) error {
+	paymentRequest := PaymentExecuteRequest{}
+	paymentRequest.PayerID = payerID
+
+	inData, err := json.Marshal(paymentRequest)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", s.client.URL(fmt.Sprintf(paymentExecuteURL, paymentID)), bytes.NewBuffer(inData))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", s.client.Authorization())
+
+	res, err := s.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	outData, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	// TODO: あとで
+	fmt.Println(string(outData))
+
+	return nil
 }
