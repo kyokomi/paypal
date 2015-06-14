@@ -16,8 +16,9 @@ type PayPalClient struct {
 	Admin   AdminAuthToken
 
 	// service
-	OAuth2  OAuth2Service
-	Payment PaymentService
+	OAuth2   OAuth2Service
+	Payment  PaymentService
+	Identity IdentityService
 }
 
 func NewClient(options PayPalOptions) *PayPalClient {
@@ -28,6 +29,7 @@ func NewClient(options PayPalOptions) *PayPalClient {
 	// service
 	c.OAuth2 = OAuth2Service{client: c}
 	c.Payment = PaymentService{client: c}
+	c.Identity = IdentityService{client: c}
 
 	return c
 }

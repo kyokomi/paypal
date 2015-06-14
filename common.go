@@ -124,8 +124,11 @@ type Sale struct {
 // PayoutItem Sender-created description of a payout to a single recipient.
 type PayoutItem struct {
 	RecipientType RecipientType `json:"recipient_type"`
-	Amount        Amount        `json:"amount"`
-	Note          string        `json:"note,omitempty"`
-	Receiver      string        `json:"receiver"`
-	SenderItemID  string        `json:"sender_item_id,omitempty"`
+	Amount        struct {
+		Currency string `json:"currency"`
+		Value    string `json:"value"`
+	} `json:"amount"`
+	Note         string `json:"note,omitempty"`
+	Receiver     string `json:"receiver"`
+	SenderItemID string `json:"sender_item_id,omitempty"`
 }

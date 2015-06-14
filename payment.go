@@ -12,7 +12,7 @@ const (
 	paymentListURL    = "/v1/payments/payment"
 	paymentCreateURL  = "/v1/payments/payment"
 	paymentExecuteURL = "/v1/payments/payment/%s/execute/"
-	paymentPayoutURL  = "/v1/payments/payouts?sync_mode=%s"
+	paymentPayoutURL  = "/v1/payments/payouts?sync_mode=%v"
 )
 
 // PaymentService payment api service
@@ -163,9 +163,9 @@ func (s PaymentService) Execute(paymentID string, executeReq PaymentExecuteReque
 type PaymentPayoutRequest struct {
 	Items             []PayoutItem `json:"items"`
 	SenderBatchHeader struct {
-		EmailSubject  string `json:"email_subject"`
-		RecipientType string `json:"recipient_type"`
-		SenderBatchID string `json:"sender_batch_id"`
+		EmailSubject  string        `json:"email_subject"`
+		RecipientType RecipientType `json:"recipient_type"`
+		SenderBatchID string        `json:"sender_batch_id"`
 	} `json:"sender_batch_header"`
 }
 
@@ -175,7 +175,7 @@ func (s PaymentService) Payout(syncMode bool, payoutReq PaymentPayoutRequest) er
 		return err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf(paymentPayoutURL, syncMode), bytes.NewBuffer(inData))
+	req, err := http.NewRequest("POST", s.client.URL(fmt.Sprintf(paymentPayoutURL, syncMode)), bytes.NewBuffer(inData))
 	if err != nil {
 		return err
 	}
