@@ -4,8 +4,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/kyokomi/paypal"
+	"fmt"
+	"time"
+
 	"github.com/k0kubun/pp"
+	"github.com/kyokomi/paypal"
 )
 
 func main() {
@@ -50,5 +53,26 @@ func main() {
 		log.Println(err)
 	} else {
 		pp.Println(response)
+
+		executeReq := paypal.PaymentExecuteRequest{}
+		executeReq.PayerID = response.Payer.PayerInfo.PayerID
+		if err := client.Payment.Execute(response.ID, executeReq); err != nil {
+			log.Println(err)
+		}
+
+		payoutReq := paypal.PaymentPayoutRequest{}
+		payoutReq.SenderBatchHeader.EmailSubject = "test example"
+		payoutReq.Items = make([]paypal.PayoutItem, 0)
+		item := paypal.PayoutItem{}
+		item.Note = "test"
+		item.Receiver = "kyokomi1220dev-performer@gmail.com"
+		item.RecipientType = paypal.RECIPIENT_EMAIL
+		item.SenderItemID = fmt.Sprintf("%d", time.Now().UnixNano())
+		item.Amount.Value = "9.01"
+		item.Amount.Currency = "USD"
+		payoutReq.Items = append(payoutReq.Items, item)
+		if err := client.Payment.Payout(true, payoutReq); err != nil {
+			log.Println(err)
+		}
 	}
 }
