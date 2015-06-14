@@ -155,6 +155,7 @@ func (s PaymentService) Execute(paymentID string, executeReq PaymentExecuteReque
 		return err
 	}
 	// TODO: あとで
+
 	fmt.Println("payment/execute", string(outData))
 
 	return nil
@@ -169,15 +170,49 @@ type PaymentPayoutRequest struct {
 	} `json:"sender_batch_header"`
 }
 
-func (s PaymentService) Payout(syncMode bool, payoutReq PaymentPayoutRequest) error {
+type PaymentPayoutResponse struct {
+	BatchHeader struct {
+		PayoutBatchID     string `json:"payout_batch_id"`
+		BatchStatus       string `json:"batch_status"`
+		SenderBatchHeader struct {
+			EmailSubject string `json:"email_subject"`
+		} `json:"sender_batch_header"`
+		Amount struct {
+			Currency string `json:"currency"`
+			Value    string `json:"value"`
+		} `json:"amount"`
+		Fees struct {
+			Currency string `json:"currency"`
+			Value    string `json:"value"`
+		} `json:"fees"`
+		TimeCompleted string `json:"time_completed"`
+		TimeCreated   string `json:"time_created"`
+	} `json:"batch_header"`
+	Items []struct {
+		PayoutItemID  string     `json:"payout_item_id"`
+		PayoutItem    PayoutItem `json:"payout_item"`
+		PayoutItemFee struct {
+			Currency string `json:"currency"`
+			Value    string `json:"value"`
+		} `json:"payout_item_fee"`
+		PayoutBatchID     string `json:"payout_batch_id"`
+		Links             []Link `json:"links"`
+		TimeProcessed     string `json:"time_processed"`
+		TransactionID     string `json:"transaction_id"`
+		TransactionStatus string `json:"transaction_status"`
+	} `json:"items"`
+	Links []Link `json:"links"`
+}
+
+func (s PaymentService) Payout(syncMode bool, payoutReq PaymentPayoutRequest) (PaymentPayoutResponse, error) {
 	inData, err := json.Marshal(payoutReq)
 	if err != nil {
-		return err
+		return PaymentPayoutResponse{}, err
 	}
 
 	req, err := http.NewRequest("POST", s.client.URL(fmt.Sprintf(paymentPayoutURL, syncMode)), bytes.NewBuffer(inData))
 	if err != nil {
-		return err
+		return PaymentPayoutResponse{}, err
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -185,21 +220,19 @@ func (s PaymentService) Payout(syncMode bool, payoutReq PaymentPayoutRequest) er
 
 	res, err := s.client.Do(req)
 	if err != nil {
-		return err
+		return PaymentPayoutResponse{}, err
 	}
 	defer res.Body.Close()
 
 	outData, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return err
+		return PaymentPayoutResponse{}, err
 	}
 
 	if res.StatusCode >= 400 {
-		return fmt.Errorf("response error %d %s", res.StatusCode, string(outData))
+		return PaymentPayoutResponse{}, fmt.Errorf("response error %d %s", res.StatusCode, string(outData))
 	}
 
-	// TODO: あとで
-	fmt.Println("payment/execute", string(outData))
-
-	return nil
+	var result PaymentPayoutResponse
+	return result, json.Unmarshal(outData, &result)
 }

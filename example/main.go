@@ -71,8 +71,10 @@ func main() {
 		item.Amount.Value = "9.01"
 		item.Amount.Currency = "USD"
 		payoutReq.Items = append(payoutReq.Items, item)
-		if err := client.Payment.Payout(true, payoutReq); err != nil {
+		if payoutRes, err := client.Payment.Payout(true, payoutReq); err != nil {
 			log.Println(err)
+		} else {
+			pp.Println(payoutRes)
 		}
 	}
 }
